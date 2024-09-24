@@ -1,0 +1,46 @@
+#define _CRT_SECURE_NO_WARNINGS
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#define MAX_SIZE 5
+#define NAME_SIZE 10
+
+typedef struct {
+	int key;
+	char name[NAME_SIZE];
+} record;
+record list[MAX_SIZE];
+
+int compare(const void* arg1, const void* arg2)
+{
+	// 본인이 작성하라
+	int i, j;
+	record current_record ;
+	for (i = 1; i < MAX_SIZE; i++) {
+		current_record = list[i];
+		for (j = i - 1; j >= 0 && list[j].key > current_record.key; j--)
+			list[j + 1] = list[j]; /* 레코드의 오른쪽 이동 */
+		list[j + 1] = current_record;
+	}
+	return 
+}
+
+int main(void)
+{
+	char name[MAX_SIZE][NAME_SIZE] = { "david", "edward", "alice", "bob", "cindy" };
+	for (int i = 0; i < MAX_SIZE; i++) {      	// 난수 생성 및 출력 
+		list[i].key = i; // 난수 발생 범위 0~99
+		strcpy(list[i].name, name[i]);
+	}
+	printf("정렬전\n");
+	for (int i = 0; i < MAX_SIZE; i++)
+		printf("(%d %s)  ", list[i].key, list[i].name);
+
+	qsort((void*)list, (size_t)MAX_SIZE, sizeof(record), compare);
+
+	printf("\n\n정렬후\n");
+	for (int i = 0; i < MAX_SIZE; i++)
+		printf("(%d %s)  ", list[i].key, list[i].name);
+	printf("\n");
+	return 0;
+}
