@@ -20,7 +20,7 @@ int compare(const void* arg1, const void* arg2)
 		current_record = list[i];
 		for (j = i - 1; j >= 0 && list[j].key > current_record.key; j--)
 			list[j + 1] = list[j]; /* 레코드의 오른쪽 이동 */
-		list[j + 1] = current_record;
+	eeeeeeee	list[j + 1] = current_record;
 	}
 	return 
 }
