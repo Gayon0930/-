@@ -1,46 +1,228 @@
-#define _CRT_SECURE_NO_WARNINGS
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#define MAX_SIZE 5
-#define NAME_SIZE 10
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Networking;
+using UnityEngine.UI;
+using TMPro;
 
-typedef struct {
-	int key;
-	char name[NAME_SIZE];
-} record;
-record list[MAX_SIZE];
-
-int compare(const void* arg1, const void* arg2)
+public class LobbyManager : MonoBehaviour
 {
-	// 본인이 작성하라
-	int i, j;
-	record current_record ;
-	for (i = 1; i < MAX_SIZE; i++) {
-		current_record = list[i];
-		for (j = i - 1; j >= 0 && list[j].key > current_record.key; j--)
-			list[j + 1] = list[j]; /* 레코드의 오른쪽 이동 */
-	eeeeeeee	list[j + 1] = current_record;
-	}
-	return 
-}
+    // UI 컴포넌트들
+    public Button loginBtn; // 로그인 버튼
+    public TMP_InputField IDtext; // 사용자 ID 입력 필드
+    public TMP_Text ConnectionStatus; // 서버 연결 상태를 표시하는 텍스트
 
-int main(void)
-{
-	char name[MAX_SIZE][NAME_SIZE] = { "david", "edward", "alice", "bob", "cindy" };
-	for (int i = 0; i < MAX_SIZE; i++) {      	// 난수 생성 및 출력 
-		list[i].key = i; // 난수 발생 범위 0~99
-		strcpy(list[i].name, name[i]);
-	}
-	printf("정렬전\n");
-	for (int i = 0; i < MAX_SIZE; i++)
-		printf("(%d %s)  ", list[i].key, list[i].name);
+    public GameObject RoomPanel; // 방 목록을 표시하는 패널
+    public TMP_InputField RoomNameInput; // 방 이름 입력 필드
+    public Button addRoomBtn; // 방 추가 버튼
+    public Button createRoomBtn; // 방 생성 버튼
+    public Transform RoomListContent; // 방 목록이 표시될 부모 객체
 
-	qsort((void*)list, (size_t)MAX_SIZE, sizeof(record), compare);
+    private string serverUrl = "http://localhost:8080/api"; // 서버 URL
 
-	printf("\n\n정렬후\n");
-	for (int i = 0; i < MAX_SIZE; i++)
-		printf("(%d %s)  ", list[i].key, list[i].name);
-	printf("\n");
-	return 0;
+    // Unity 시작 시 호출되는 함수
+    void Start()
+    {
+        // 버튼 클릭 시 실행될 메서드 등록
+        loginBtn.onClick.AddListener(() => StartCoroutine(Login()));
+        addRoomBtn.onClick.AddListener(() => AddRoomToList());
+        createRoomBtn.onClick.AddListener(CreateRoomIfNotExists);
+    }
+
+    // 방을 목록에 추가하는 함수
+    public void AddRoomToList()
+    {
+        // 방 목록이나 입력 필드가 비어있는지 확인
+        if (RoomListContent == null || RoomNameInput == null)
+        {
+            Debug.LogError("RoomListContent 또는 RoomNameInput이 할당되지 않았습니다!");
+            return;
+        }
+
+        // 입력된 방 이름 가져오기
+        string roomName = RoomNameInput.text;
+        if (string.IsNullOrEmpty(roomName))
+        {
+            // 랜덤 방 이름 생성
+            roomName = "Room" + Random.Range(1000, 9999);
+            RoomNameInput.text = roomName;
+        }
+
+        // 방 생성 로그 출력
+        Debug.Log("방 생성: " + roomName);
+
+        // 방 항목을 UI에 추가
+        GameObject roomItem = new GameObject("RoomItem");
+        roomItem.transform.SetParent(RoomListContent);
+
+        RectTransform rectTransform = roomItem.AddComponent<RectTransform>();
+        rectTransform.localScale = Vector3.one;
+        rectTransform.sizeDelta = new Vector2(200, 50);
+
+        TextMeshProUGUI roomText = roomItem.AddComponent<TextMeshProUGUI>();
+        roomText.text = roomName;
+        roomText.fontSize = 24;
+        roomText.alignment = TextAlignmentOptions.Center;
+
+        // 버튼을 추가하고 클릭 이벤트 등록
+        Button roomButton = roomItem.AddComponent<Button>();
+        roomButton.onClick.AddListener(() => OnSelectRoom(roomName));
+
+        Image buttonImage = roomItem.AddComponent<Image>();
+        buttonImage.color = Color.white;
+
+        // 내용 크기 자동 조정 설정
+        ContentSizeFitter fitter = roomItem.AddComponent<ContentSizeFitter>();
+        fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
+        fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
+    }
+
+    // 로그인 요청을 보내는 코루틴
+    IEnumerator Login()
+    {
+        // ID가 입력되지 않았을 경우
+        if (string.IsNullOrEmpty(IDtext.text))
+        {
+            ConnectionStatus.text = "ID를 입력하세요.";
+            yield break;
+        }
+
+        // JSON 데이터 생성
+        var loginData = new { username = IDtext.text };
+        string jsonData = JsonUtility.ToJson(loginData);
+
+        // HTTP POST 요청 설정
+        using (UnityWebRequest request = new UnityWebRequest($"{serverUrl}/login", "POST"))
+        {
+            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+
+            // 요청 보내기
+            yield return request.SendWebRequest();
+
+            // 요청 결과 처리
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                ConnectionStatus.text = "로그인 성공!";
+                RoomPanel.SetActive(true); // 방 목록 표시
+                StartCoroutine(LoadRoomList()); // 방 목록 로드
+            }
+            else
+            {
+                ConnectionStatus.text = "로그인 실패: " + request.error;
+            }
+        }
+    }
+
+    // 방 목록을 서버에서 불러오는 코루틴
+    IEnumerator LoadRoomList()
+    {
+        using (UnityWebRequest request = UnityWebRequest.Get($"{serverUrl}/rooms"))
+        {
+            // 요청 보내기
+            yield return request.SendWebRequest();
+
+            // 요청 결과 처리
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                // JSON 응답을 객체로 변환
+                List<RoomInfoDto> roomList = JsonUtility.FromJson<RoomListResponse>(request.downloadHandler.text).rooms;
+                UpdateRoomList(roomList); // UI 업데이트
+            }
+            else
+            {
+                ConnectionStatus.text = "방 목록 로드 실패: " + request.error;
+            }
+        }
+    }
+
+    // 방 목록 UI를 업데이트하는 함수
+    private void UpdateRoomList(List<RoomInfoDto> rooms)
+    {
+        // 기존 방 항목 삭제
+        foreach (Transform child in RoomListContent)
+        {
+            Destroy(child.gameObject);
+        }
+
+        // 서버에서 받아온 방 목록 추가
+        foreach (var room in rooms)
+        {
+            GameObject roomItem = new GameObject("RoomItem");
+            roomItem.transform.SetParent(RoomListContent);
+
+            TMP_Text roomText = roomItem.AddComponent<TMP_Text>();
+            roomText.text = room.name;
+            roomText.fontSize = 24;
+
+            Button roomButton = roomItem.AddComponent<Button>();
+            roomButton.onClick.AddListener(() => OnSelectRoom(room.name));
+        }
+    }
+
+    // 방을 선택했을 때 실행되는 함수
+    public void OnSelectRoom(string roomName)
+    {
+        RoomNameInput.text = roomName; // 선택된 방 이름 표시
+    }
+
+    // 방이 존재하지 않을 경우 새로 생성하는 함수
+    public void CreateRoomIfNotExists()
+    {
+        string roomName = RoomNameInput.text;
+
+        // 방 이름이 비어있을 경우
+        if (string.IsNullOrEmpty(roomName))
+        {
+            ConnectionStatus.text = "방 이름을 입력하세요.";
+            return;
+        }
+
+        StartCoroutine(CreateRoom(roomName)); // 방 생성 코루틴 실행
+    }
+
+    // 방을 생성하는 코루틴
+    IEnumerator CreateRoom(string roomName)
+    {
+        var roomData = new { name = roomName };
+        string jsonData = JsonUtility.ToJson(roomData);
+
+        using (UnityWebRequest request = new UnityWebRequest($"{serverUrl}/rooms", "POST"))
+        {
+            byte[] bodyRaw = System.Text.Encoding.UTF8.GetBytes(jsonData);
+            request.uploadHandler = new UploadHandlerRaw(bodyRaw);
+            request.downloadHandler = new DownloadHandlerBuffer();
+            request.SetRequestHeader("Content-Type", "application/json");
+
+            // 요청 보내기
+            yield return request.SendWebRequest();
+
+            // 요청 결과 처리
+            if (request.result == UnityWebRequest.Result.Success)
+            {
+                ConnectionStatus.text = $"방 '{roomName}'이 생성되었습니다!";
+                StartCoroutine(LoadRoomList()); // 방 목록 갱신
+            }
+            else
+            {
+                ConnectionStatus.text = "방 생성 실패: " + request.error;
+            }
+        }
+    }
+
+    // 서버로부터 받아올 방 정보 DTO
+    [System.Serializable]
+    public class RoomInfoDto
+    {
+        public string name; // 방 이름
+    }
+
+    // 서버 응답을 담는 클래스
+    [System.Serializable]
+    public class RoomListResponse
+    {
+        public List<RoomInfoDto> rooms; // 방 목록
+    }
 }
