@@ -5,7 +5,7 @@ import me.docherri.springbootdeveloper.repository.RoomRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
-import java.util.Optional;
+
 
 @RestController
 @RequestMapping("/api")
@@ -17,13 +17,6 @@ public class LobbyController {
         this.roomRepository = roomRepository;
     }
 
-    @PostMapping("/login")
-    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
-        if (request.getUsername() == null || request.getUsername().isEmpty()) {
-            return ResponseEntity.badRequest().body("Username cannot be empty");
-        }
-        return ResponseEntity.ok("Login successful");
-    }
 
     @GetMapping("/rooms")
     public ResponseEntity<List<Room>> getRooms() {

@@ -13,6 +13,8 @@ public class CustomWebSocketConfig implements WebSocketConfigurer {
 
     @Override
     public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
-        registry.addHandler(new MyWebSocketHandler(), "/ws").setAllowedOrigins("*");
+        registry.addHandler(new MyWebSocketHandler(), "/ws")
+                .setAllowedOrigins("https://35.206.112.192");
     }
+
 }

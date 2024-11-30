@@ -4,6 +4,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import me.docherri.springbootdeveloper.domain.User;
+import org.springframework.web.multipart.MultipartFile;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -12,6 +13,4 @@ public class UserProfileDto {
     private String nickname;
     private User.Gender gender;
     private String profileMessage;
-    private String profilePicUrl;
-
 }
