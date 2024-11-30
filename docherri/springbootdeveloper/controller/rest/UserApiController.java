@@ -19,8 +19,8 @@ public class UserApiController {
 
 
     //조회
-    @GetMapping("/api/users/{nickname}")
-    public ResponseEntity<UserProfileDto> getUser(@PathVariable("nickname") String nickname) {
+    @GetMapping("/api/users/{username}")
+    public ResponseEntity<UserProfileDto> getUser(@PathVariable("username") String nickname) {
         return userService.getUserByNickname(nickname)
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.status(HttpStatus.NOT_FOUND).body(null));

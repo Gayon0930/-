@@ -20,8 +20,8 @@ public class User {
     @Column(name = "uid", updatable = false, unique = true)
     private long uid;
 
-    @Column(name = "nickname", nullable = false)
-    private String nickname;
+    @Column(name = "username", nullable = false, unique = true)
+    private String username;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "gender", nullable = true)

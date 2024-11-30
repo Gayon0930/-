@@ -25,28 +25,28 @@ public class UserService {
 
     //유저 생성
     public void createUser(UserCreateDto userCreateDto) {
-        if (userRepository.findByNickname(userCreateDto.getUsername()).isPresent()) {
+        if (userRepository.findByUsername(userCreateDto.getUsername()).isPresent()) {
             throw new RuntimeException("Nickname already exists");
         }
         User user = new User();
-        user.setNickname(userCreateDto.getUsername());
+        user.setUsername(userCreateDto.getUsername());
        // user.setGender(userCreateDto.getGender());
         userRepository.save(user);
     }
 
     //유저 조회
     public Optional<UserProfileDto> getUserByNickname(String nickname) {
-        return userRepository.findByNickname(nickname)
+        return userRepository.findByUsername(nickname)
                 .map(user -> new UserProfileDto(
-                        user.getNickname(),
+                        user.getUsername(),
                         user.getGender(),
                         user.getProfileMessage()
                 ));
     }
     //유저 업데이트
-    public void userUpdate(String nickname, UserUpdateDto update) throws IOException {
-        User user = userRepository.findByNickname(nickname)
-                .orElseThrow(() -> new RuntimeException("User not found : " + nickname));
+    public void userUpdate(String username, UserUpdateDto update) throws IOException {
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new RuntimeException("User not found : " + username));
 
         if(update.getProfileMessage() != null)
             user.setProfileMessage(update.getProfileMessage());

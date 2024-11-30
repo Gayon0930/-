@@ -10,7 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 @AllArgsConstructor
 @Getter
 public class UserProfileDto {
-    private String nickname;
+    private String username;
     private User.Gender gender;
     private String profileMessage;
 }
